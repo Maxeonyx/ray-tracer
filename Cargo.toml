@@ -1,0 +1,8 @@
+[package]
+name = "pstet"
+version = "0.1.0"
+authors = ["maxeonyx <maxeonyx@gmail.com>"]
+
+[dependencies]
+piston_window = "*"
+cgmath = "*"
