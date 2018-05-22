@@ -5,10 +5,13 @@ use piston_window::*;
 use std::sync::{Arc, Mutex};
 use std::vec::Vec;
 
+mod shapes;
+mod solvers;
 mod types;
 
 use types::*;
 
+use shapes::*;
 
 fn make_cells() -> Cells {
     let mut v = Vec::with_capacity(CELLS_HIGH * CELLS_WIDE);
