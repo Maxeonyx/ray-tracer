@@ -6,3 +6,4 @@ authors = ["maxeonyx <maxeonyx@gmail.com>"]
 [dependencies]
 piston_window = "*"
 cgmath = "*"
+rayon = "*"
