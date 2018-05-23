@@ -9,7 +9,7 @@ pub trait Object {
 }
 
 pub struct Sphere {
-	center: v3,
+	center: V3,
 	radius: f32,
 }
 
