@@ -16,7 +16,10 @@ pub enum Surface {
 	//Textured(u8),
 }
 
-pub struct Texture {}
+pub struct Light {
+	pub color: f32,
+	pub brightness: f32,
+}
 
 pub struct Object2 {
 	pub position: V3,
@@ -38,11 +41,6 @@ impl Object2 {
 	pub fn closest_intersection(&self, ray: &Ray) -> Option<f32> {
 		match self.shape {
 			Shape::Sphere(radius) => sphere_intersection(self.position, radius, ray),
-		}
-	}
-	pub fn color(&self, ray: &Ray, t: f32) -> Color {
-		match self.surface {
-			Surface::Diffuse => self.color,
 		}
 	}
 }

@@ -41,7 +41,7 @@ fn trace(ray: &Ray, scene: &Scene, depth: u32) -> Color {
         return BACKGROUND_COLOR;
     }
 
-    let intersections = scene.into_iter().filter_map(move |obj| {
+    let intersections = scene.objects.iter().filter_map(move |obj| {
         match obj.closest_intersection(ray) {
             None => None,
             Some(t) => Some((t, obj)),
@@ -54,7 +54,9 @@ fn trace(ray: &Ray, scene: &Scene, depth: u32) -> Color {
 
     match closest_intersect {
         None => BACKGROUND_COLOR,
-        Some((t, obj)) => obj.color(ray, t),
+        Some((t, obj)) => match obj.surface {
+            Surface::Diffuse => obj.color,
+        },
     }
 }
 
@@ -137,25 +139,31 @@ where
     }
 }
 
-type Scene = Vec<Box<Object2>>;
+pub struct Scene {
+    objects: Vec<Object2>,
+    lights: Vec<Light>,
+}
 
 fn initialise_scene() -> Scene {
-    vec![
-        Box::new(Object2 {
-            position: V3 {
-                x: 0.0,
-                y: 0.0,
-                z: -5.0,
+    Scene {
+        objects: vec![
+            Object2 {
+                position: V3 {
+                    x: 0.0,
+                    y: 0.0,
+                    z: -5.0,
+                },
+                color: Color {
+                    r: 0.1,
+                    g: 0.8,
+                    b: 0.1,
+                },
+                shape: Shape::Sphere(1.0),
+                surface: Surface::Diffuse,
             },
-            color: Color {
-                r: 0.1,
-                g: 0.8,
-                b: 0.1,
-            },
-            shape: Shape::Sphere(1.0),
-            surface: Surface::Diffuse,
-        }),
-    ]
+        ],
+        lights: vec![],
+    }
 }
 
 fn main() {
