@@ -1,6 +1,4 @@
-use cgmath::num_traits::abs;
 use cgmath::*;
-use std::sync::{Arc, RwLock};
 
 use solvers::*;
 use types::*;

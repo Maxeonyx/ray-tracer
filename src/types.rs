@@ -2,10 +2,15 @@ use cgmath::Vector3;
 use std::sync::{Arc, Mutex};
 use std::vec::Vec;
 
-pub const CELLS_WIDE: usize = 50;
-pub const CELLS_HIGH: usize = 50;
+pub const CELLS_WIDE: usize = 30;
+pub const CELLS_HIGH: usize = 30;
 
-pub type Color = [f32; 4];
+#[derive(Clone, Copy)]
+pub struct Color {
+	pub r: f32,
+	pub g: f32,
+	pub b: f32,
+}
 
 pub type Cells = Arc<Vec<Mutex<Color>>>;
 

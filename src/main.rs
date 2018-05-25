@@ -1,6 +1,7 @@
 extern crate cgmath;
 extern crate piston_window;
 extern crate rayon;
+use cgmath::prelude::*;
 use piston_window::*;
 use std::iter::Iterator;
 use std::sync::{Arc, Mutex};
@@ -14,8 +15,16 @@ use types::*;
 
 use shapes::*;
 
-const DEFAULT_COLOR: Color = [0.1, 0.1, 0.1, 1.0];
-const BACKGROUND_COLOR: Color = [0.8, 0.1, 0.8, 1.0];
+const DEFAULT_COLOR: Color = Color {
+    r: 0.1,
+    g: 0.1,
+    b: 0.1,
+};
+const BACKGROUND_COLOR: Color = Color {
+    r: 0.8,
+    g: 0.1,
+    b: 0.8,
+};
 
 fn make_cells() -> Cells {
     let mut v = Vec::with_capacity(CELLS_HIGH * CELLS_WIDE);
@@ -63,7 +72,7 @@ fn trace_rays(cells: Cells, scene: Scene) {
         let (cell_x, cell_y) = get_xy(index);
         let (cell_x, cell_y) = (cell_x as f32, cell_y as f32);
 
-        let ray = Ray {
+        let mut ray = Ray {
             origin: V3 {
                 x: 0.0,
                 y: 0.0,
@@ -77,15 +86,14 @@ fn trace_rays(cells: Cells, scene: Scene) {
             },
         };
 
+        ray.direction = ray.direction.normalize();
+
         let color = trace(&ray, &scene);
 
         'try_update: loop {
             match cell.lock() {
                 Ok(mut c) => {
-                    c[0] = color[0];
-                    c[1] = color[1];
-                    c[2] = color[2];
-                    c[3] = color[3];
+                    *c = color;
                     break 'try_update;
                 }
                 Err(_) => println!("Hit lock."),
@@ -94,7 +102,7 @@ fn trace_rays(cells: Cells, scene: Scene) {
     });
 }
 
-fn render_screen<G>(cells: &Cells, screen_size: Size, transform: [[f64; 3]; 2], g: &mut G)
+fn render_screen<G>(cells: Cells, screen_size: Size, transform: [[f64; 3]; 2], g: &mut G)
 where
     G: Graphics,
 {
@@ -107,7 +115,7 @@ where
             match cells[get_index(x, y)].lock() {
                 Ok(cell) => {
                     rectangle(
-                        [cell[0], cell[1], cell[2], cell[3]],
+                        [cell.r, cell.g, cell.b, 1.0],
                         [
                             x as f64 * cell_width,
                             y as f64 * cell_height,
@@ -130,11 +138,15 @@ fn initialise_scene() -> Scene {
     vec![
         Box::new(Object2 {
             position: V3 {
-                x: 1.0,
-                y: 1.0,
-                z: 5.0,
+                x: 0.0,
+                y: 0.0,
+                z: -5.0,
             },
-            color: [0.1, 0.8, 0.1, 1.0],
+            color: Color {
+                r: 0.1,
+                g: 0.8,
+                b: 0.1,
+            },
             shape: Shape::Sphere(1.0),
             surface: Surface::Diffuse,
         }),
@@ -142,11 +154,15 @@ fn initialise_scene() -> Scene {
 }
 
 fn main() {
-    let mut window: PistonWindow =
-        WindowSettings::new("Hello Piston!", (CELLS_HIGH as u32, CELLS_WIDE as u32))
-            .exit_on_esc(true)
-            .build()
-            .unwrap_or_else(|e| panic!("Failed to build PistonWindow: {}", e));
+    let mut window: PistonWindow = WindowSettings::new(
+        "Hello Piston!",
+        Size {
+            width: 400,
+            height: 600,
+        },
+    ).exit_on_esc(true)
+        .build()
+        .unwrap_or_else(|e| panic!("Failed to build PistonWindow: {}", e));
 
     let cells = make_cells();
 
@@ -159,10 +175,11 @@ fn main() {
 
     while let Some(e) = window.next() {
         let size = window.size();
+        let closure_cells = cells.clone();
         window.draw_2d(&e, |c, g| {
             clear([0.5, 1.0, 0.5, 1.0], g);
 
-            render_screen(&cells, size, c.transform, g);
+            render_screen(closure_cells, size, c.transform, g);
         });
     }
 }
