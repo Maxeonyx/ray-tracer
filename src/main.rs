@@ -15,15 +15,15 @@ use types::*;
 
 use shapes::*;
 
-const DEFAULT_COLOR: Color = Color {
-    r: 0.1,
-    g: 0.1,
-    b: 0.1,
+const DEFAULT_COLOR: Color = V3 {
+    x: 0.4,
+    y: 0.1,
+    z: 0.4,
 };
 const BACKGROUND_COLOR: Color = Color {
-    r: 0.8,
-    g: 0.1,
-    b: 0.8,
+    x: 0.1,
+    y: 0.1,
+    z: 0.1,
 };
 
 const MAX_TRACE_DEPTH: u32 = 12;
@@ -49,14 +49,34 @@ fn trace(ray: &Ray, scene: &Scene, depth: u32) -> Color {
     });
 
     use std::cmp::Ordering;
-    let closest_intersect =
-        intersections.min_by(|(t1, _), (t2, _)| t1.partial_cmp(t2).unwrap_or(Ordering::Equal));
+    let closest_intersect = intersections
+        .min_by(|(t1, _obj1), (t2, _obj2)| t1.partial_cmp(t2).unwrap_or(Ordering::Equal));
 
     match closest_intersect {
         None => BACKGROUND_COLOR,
-        Some((t, obj)) => match obj.surface {
-            Surface::Diffuse => obj.color,
-        },
+        Some((t, obj)) => {
+            let intersect = ray.direction * t;
+
+            let normal = obj.normal(intersect);
+
+            let diffuse_factor: f32 = scene
+                .lights
+                .iter()
+                .map(|light| -> f32 {
+                    let light_vec = (light.position - intersect).normalize();
+
+                    let ldotn = light_vec.dot(normal);
+
+                    if ldotn < 0.0 {
+                        0.0
+                    } else {
+                        ldotn
+                    }
+                })
+                .sum::<f32>() / scene.lights.len() as f32;
+
+            0.1 * obj.color + diffuse_factor * obj.color
+        }
     }
 }
 
@@ -89,7 +109,7 @@ fn trace_rays(cells: Cells, scene: Scene) {
                 x: -camera_sensor_width / 2.0 + cell_x * (camera_sensor_width / CELLS_WIDE as f32),
                 y: -camera_sensor_height / 2.0
                     + cell_y * (camera_sensor_height / CELLS_HIGH as f32),
-                z: camera_sensor_dist,
+                z: -camera_sensor_dist,
             },
         };
 
@@ -122,7 +142,7 @@ where
             match cells[get_index(x, y)].lock() {
                 Ok(cell) => {
                     rectangle(
-                        [cell.r, cell.g, cell.b, 1.0],
+                        [cell.x, cell.y, cell.z, 1.0],
                         [
                             x as f64 * cell_width,
                             y as f64 * cell_height,
@@ -153,16 +173,29 @@ fn initialise_scene() -> Scene {
                     y: 0.0,
                     z: -5.0,
                 },
-                color: Color {
-                    r: 0.1,
-                    g: 0.8,
-                    b: 0.1,
+                color: V3 {
+                    x: 0.1,
+                    y: 0.8,
+                    z: 0.1,
                 },
                 shape: Shape::Sphere(1.0),
                 surface: Surface::Diffuse,
             },
         ],
-        lights: vec![],
+        lights: vec![
+            Light {
+                position: V3 {
+                    x: 6.0,
+                    y: -6.0,
+                    z: -5.0,
+                },
+                color: V3 {
+                    x: 1.0,
+                    y: 0.3,
+                    z: 0.3,
+                },
+            },
+        ],
     }
 }
 
