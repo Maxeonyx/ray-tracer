@@ -26,6 +26,8 @@ const BACKGROUND_COLOR: Color = Color {
     b: 0.8,
 };
 
+const MAX_TRACE_DEPTH: u32 = 12;
+
 fn make_cells() -> Cells {
     let mut v = Vec::with_capacity(CELLS_HIGH * CELLS_WIDE);
     for _ in 0..(CELLS_HIGH * CELLS_WIDE) {
@@ -34,8 +36,10 @@ fn make_cells() -> Cells {
     Arc::new(v)
 }
 
-fn trace(ray: &Ray, scene: &Scene) -> Color {
-    use std::cmp::Ordering;
+fn trace(ray: &Ray, scene: &Scene, depth: u32) -> Color {
+    if depth > MAX_TRACE_DEPTH {
+        return BACKGROUND_COLOR;
+    }
 
     let intersections = scene.into_iter().filter_map(move |obj| {
         match obj.closest_intersection(ray) {
@@ -44,6 +48,7 @@ fn trace(ray: &Ray, scene: &Scene) -> Color {
         }
     });
 
+    use std::cmp::Ordering;
     let closest_intersect =
         intersections.min_by(|(t1, _), (t2, _)| t1.partial_cmp(t2).unwrap_or(Ordering::Equal));
 
@@ -88,7 +93,7 @@ fn trace_rays(cells: Cells, scene: Scene) {
 
         ray.direction = ray.direction.normalize();
 
-        let color = trace(&ray, &scene);
+        let color = trace(&ray, &scene, 0);
 
         'try_update: loop {
             match cell.lock() {
