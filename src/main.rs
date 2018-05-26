@@ -37,19 +37,19 @@ fn make_cells() -> Cells {
 }
 
 fn trace(ray: &Ray, scene: &Scene, depth: u32) -> Color {
+    use std::cmp::Ordering;
+
     if depth > MAX_TRACE_DEPTH {
         return BACKGROUND_COLOR;
     }
 
-    let intersections = scene.objects.iter().filter_map(move |obj| {
-        match obj.closest_intersection(ray) {
+    let closest_intersect = scene
+        .objects
+        .iter()
+        .filter_map(move |obj| match obj.closest_intersection(ray) {
             None => None,
             Some(t) => Some((t, obj)),
-        }
-    });
-
-    use std::cmp::Ordering;
-    let closest_intersect = intersections
+        })
         .min_by(|(t1, _obj1), (t2, _obj2)| t1.partial_cmp(t2).unwrap_or(Ordering::Equal));
 
     match closest_intersect {
@@ -65,13 +65,7 @@ fn trace(ray: &Ray, scene: &Scene, depth: u32) -> Color {
                 .map(|light| -> f32 {
                     let light_vec = (light.position - intersect).normalize();
 
-                    let ldotn = light_vec.dot(normal);
-
-                    if ldotn < 0.0 {
-                        0.0
-                    } else {
-                        ldotn
-                    }
+                    light_vec.dot(normal).max(0.0)
                 })
                 .sum::<f32>() / scene.lights.len() as f32;
 
@@ -187,7 +181,7 @@ fn initialise_scene() -> Scene {
                 position: V3 {
                     x: 6.0,
                     y: -6.0,
-                    z: -5.0,
+                    z: -1.0,
                 },
                 color: V3 {
                     x: 1.0,
