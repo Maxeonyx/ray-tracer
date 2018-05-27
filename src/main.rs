@@ -194,31 +194,35 @@ fn initialise_scene() -> Scene {
     Scene {
         objects: vec![
             Object2 {
-                position: V3 {
-                    x: 0.0,
-                    y: 0.0,
-                    z: -5.0,
-                },
                 color: V3 {
                     x: 0.1,
                     y: 0.8,
                     z: 0.1,
                 },
-                shape: Shape::Sphere(1.0),
+                shape: Shape::Sphere(Sphere {
+                    position: V3 {
+                        x: 0.0,
+                        y: 0.0,
+                        z: -5.0,
+                    },
+                    radius: 1.0,
+                }),
                 surface: Surface::Diffuse,
             },
             Object2 {
-                position: V3 {
-                    x: 0.0,
-                    y: 3.0,
-                    z: -10.0,
-                },
                 color: V3 {
                     x: 0.8,
                     y: 0.4,
                     z: 0.1,
                 },
-                shape: Shape::Sphere(10.0),
+                shape: Shape::Sphere(Sphere {
+                    position: V3 {
+                        x: 0.0,
+                        y: 3.0,
+                        z: -10.0,
+                    },
+                    radius: 10.0,
+                }),
                 surface: Surface::Diffuse,
             },
         ],

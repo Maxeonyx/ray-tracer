@@ -24,16 +24,21 @@ pub struct Light {
 
 #[derive(Debug)]
 pub struct Object2 {
-	pub position: V3,
 	pub color: Color,
 	pub surface: Surface,
 	pub shape: Shape,
 }
 
 #[derive(Debug)]
+pub struct Sphere {
+	pub center: V3,
+	pub radius: f32,
+}
+
+#[derive(Debug)]
 pub enum Shape {
 	// Sphere has radius
-	Sphere(f32),
+	Sphere(Sphere),
 	// Cylinder has height and radius
 	//Cylinder(f32, f32),
 	// Cone has height and radius
@@ -43,12 +48,12 @@ pub enum Shape {
 impl Object2 {
 	pub fn closest_intersection(&self, ray: &Ray) -> Option<f32> {
 		match self.shape {
-			Shape::Sphere(radius) => sphere::intersection(self.position, radius, ray),
+			Shape::Sphere(sphere) => sphere::intersection(sphere, ray),
 		}
 	}
 	pub fn normal(&self, intersection: V3) -> V3 {
 		match self.shape {
-			Shape::Sphere(_radius) => sphere::normal(self.position, intersection),
+			Shape::Sphere(sphere) => sphere::normal(sphere, intersection),
 		}
 	}
 }
@@ -56,16 +61,16 @@ impl Object2 {
 mod sphere {
 	use super::*;
 
-	pub fn normal(center: V3, intersection: V3) -> V3 {
-		(intersection - center).normalize()
+	pub fn normal(sphere: Sphere, intersection: V3) -> V3 {
+		(intersection - sphere.center).normalize()
 	}
 
-	pub fn intersection(center: V3, radius: f32, ray: &Ray) -> Option<f32> {
+	pub fn intersection(sphere: Sphere, ray: &Ray) -> Option<f32> {
 		// quadratic polynomial from analytic solution
-		let shared_term = ray.origin - center;
+		let shared_term = ray.origin - sphere.center;
 		let a = ray.direction.dot(ray.direction);
 		let b = 2.0 * ray.direction.dot(shared_term);
-		let c = shared_term.dot(shared_term) - radius;
+		let c = shared_term.dot(shared_term) - sphere.radius;
 
 		// solve for t (distance along ray) and choose closest root that is greater than 0
 		match solve_quadratic(a, b, c) {
