@@ -3,6 +3,7 @@ extern crate piston_window;
 extern crate rayon;
 use cgmath::prelude::*;
 use piston_window::*;
+use std::cmp::Ordering;
 use std::iter::Iterator;
 use std::sync::{Arc, Mutex};
 use std::vec::Vec;
@@ -36,21 +37,43 @@ fn make_cells() -> Cells {
     Arc::new(v)
 }
 
-fn trace(ray: &Ray, scene: &Scene, depth: u32) -> Color {
-    use std::cmp::Ordering;
-
-    if depth > MAX_TRACE_DEPTH {
-        return BACKGROUND_COLOR;
-    }
-
-    let closest_intersect = scene
+fn closest_intersect<'a>(ray: &Ray, scene: &'a Scene) -> Option<(f32, &'a Object2)> {
+    scene
         .objects
         .iter()
         .filter_map(move |obj| match obj.closest_intersection(ray) {
             None => None,
             Some(t) => Some((t, obj)),
         })
-        .min_by(|(t1, _obj1), (t2, _obj2)| t1.partial_cmp(t2).unwrap_or(Ordering::Equal));
+        .min_by(|(t1, _obj1), (t2, _obj2)| t1.partial_cmp(t2).unwrap_or(Ordering::Equal))
+}
+
+fn trace_shadow(point: V3, light: &Light, scene: &Scene) -> bool {
+    let shadow_ray = Ray {
+        origin: point,
+        direction: (light.position - point).normalize(),
+    };
+    let closest_intersect = closest_intersect(&shadow_ray, &scene);
+
+    match closest_intersect {
+        None => false,
+        Some((t, _obj)) => {
+            // light may be closer than object
+            if (light.position - point).magnitude() < t {
+                false
+            } else {
+                true
+            }
+        }
+    }
+}
+
+fn trace(ray: &Ray, scene: &Scene, depth: u32) -> Color {
+    if depth > MAX_TRACE_DEPTH {
+        return BACKGROUND_COLOR;
+    }
+
+    let closest_intersect = closest_intersect(&ray, &scene);
 
     match closest_intersect {
         None => BACKGROUND_COLOR,
@@ -59,15 +82,24 @@ fn trace(ray: &Ray, scene: &Scene, depth: u32) -> Color {
 
             let normal = obj.normal(intersect);
 
+            let total_brightness = scene
+                .lights
+                .iter()
+                .map(|light| light.brightness)
+                .sum::<f32>();
+
             let diffuse_factor: f32 = scene
                 .lights
                 .iter()
                 .map(|light| -> f32 {
                     let light_vec = (light.position - intersect).normalize();
-
-                    light_vec.dot(normal).max(0.0)
+                    if trace_shadow(intersect, light, scene) {
+                        0.0
+                    } else {
+                        light_vec.dot(normal).max(0.0) * light.brightness / total_brightness
+                    }
                 })
-                .sum::<f32>() / scene.lights.len() as f32;
+                .sum::<f32>();
 
             0.1 * obj.color + diffuse_factor * obj.color
         }
@@ -175,6 +207,20 @@ fn initialise_scene() -> Scene {
                 shape: Shape::Sphere(1.0),
                 surface: Surface::Diffuse,
             },
+            Object2 {
+                position: V3 {
+                    x: 0.0,
+                    y: 3.0,
+                    z: -10.0,
+                },
+                color: V3 {
+                    x: 0.8,
+                    y: 0.4,
+                    z: 0.1,
+                },
+                shape: Shape::Sphere(10.0),
+                surface: Surface::Diffuse,
+            },
         ],
         lights: vec![
             Light {
@@ -183,11 +229,15 @@ fn initialise_scene() -> Scene {
                     y: -6.0,
                     z: -1.0,
                 },
-                color: V3 {
-                    x: 1.0,
-                    y: 0.3,
-                    z: 0.3,
+                brightness: 10.0,
+            },
+            Light {
+                position: V3 {
+                    x: -6.0,
+                    y: -6.0,
+                    z: -1.0,
                 },
+                brightness: 5.0,
             },
         ],
     }

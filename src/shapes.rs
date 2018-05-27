@@ -19,7 +19,7 @@ pub enum Surface {
 #[derive(Debug)]
 pub struct Light {
 	pub position: V3,
-	pub color: Color,
+	pub brightness: f32,
 }
 
 #[derive(Debug)]

@@ -2,8 +2,8 @@ use cgmath::Vector3;
 use std::sync::{Arc, Mutex};
 use std::vec::Vec;
 
-pub const CELLS_WIDE: usize = 50;
-pub const CELLS_HIGH: usize = 50;
+pub const CELLS_WIDE: usize = 300;
+pub const CELLS_HIGH: usize = 300;
 
 pub type Color = V3;
 
