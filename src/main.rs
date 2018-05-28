@@ -27,6 +27,8 @@ const BACKGROUND_COLOR: Color = Color {
     z: 0.1,
 };
 
+const ANTIALIASING_DIV: u32 = 3;
+
 const MAX_TRACE_DEPTH: u32 = 12;
 
 fn make_cells() -> Cells {
@@ -125,23 +127,35 @@ fn trace_rays(cells: Cells, scene: Scene) {
         let (cell_x, cell_y) = get_xy(index);
         let (cell_x, cell_y) = (cell_x as f32, cell_y as f32);
 
-        let mut ray = Ray {
-            origin: V3 {
-                x: 0.0,
-                y: 0.0,
-                z: 0.0,
-            },
-            direction: V3 {
-                x: -camera_sensor_width / 2.0 + cell_x * (camera_sensor_width / CELLS_WIDE as f32),
-                y: -camera_sensor_height / 2.0
-                    + cell_y * (camera_sensor_height / CELLS_HIGH as f32),
-                z: -camera_sensor_dist,
-            },
-        };
+        let mut colors = Vec::new();
 
-        ray.direction = ray.direction.normalize();
+        let antialiasing_div_size = 1.0 / (ANTIALIASING_DIV as f32);
 
-        let color = trace(&ray, &scene, 0);
+        for x in 0..ANTIALIASING_DIV {
+            for y in 0..ANTIALIASING_DIV {
+                let x_offset = x as f32 * antialiasing_div_size + antialiasing_div_size / 2.0;
+                let y_offset = y as f32 * antialiasing_div_size + antialiasing_div_size / 2.0;
+
+                let mut ray = Ray {
+                    origin: V3 {
+                        x: 0.0,
+                        y: 0.0,
+                        z: 0.0,
+                    },
+                    direction: V3 {
+                        x: -camera_sensor_width / 2.0
+                            + (cell_x + x_offset) * (camera_sensor_width / CELLS_WIDE as f32),
+                        y: -camera_sensor_height / 2.0
+                            + (cell_y + y_offset) * (camera_sensor_height / CELLS_HIGH as f32),
+                        z: -camera_sensor_dist,
+                    },
+                };
+                ray.direction = ray.direction.normalize();
+                colors.push(trace(&ray, &scene, 0));
+            }
+        }
+
+        let color = colors.iter().sum::<V3>() / colors.len() as f32;
 
         'try_update: loop {
             match cell.lock() {
