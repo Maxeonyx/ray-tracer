@@ -9,12 +9,12 @@ use std::sync::{Arc, Mutex};
 use std::vec::Vec;
 
 mod shapes;
-mod solvers;
 mod types;
-
-use types::*;
+mod util;
 
 use shapes::*;
+use types::*;
+use util::V3Extensions;
 
 const DEFAULT_COLOR: Color = V3 {
     x: 0.4,
@@ -27,7 +27,7 @@ const BACKGROUND_COLOR: Color = Color {
     z: 0.1,
 };
 
-const ANTIALIASING_DIV: u32 = 3;
+const ANTIALIASING_DIV: u32 = 4;
 
 const MAX_TRACE_DEPTH: u32 = 12;
 
@@ -103,7 +103,23 @@ fn trace(ray: &Ray, scene: &Scene, depth: u32) -> Color {
                 })
                 .sum::<f32>();
 
-            0.1 * obj.color + diffuse_factor * obj.color
+            let specular_factor: f32 = scene
+                .lights
+                .iter()
+                .map(|light| -> f32 {
+                    let light_vec = (light.position - intersect).normalize();
+                    let reflected = (-light_vec).reflect(normal);
+                    let rdotn = reflected.dot(normal);
+                    let shininess = 20.0;
+                    if trace_shadow(intersect, light, scene) {
+                        0.0
+                    } else {
+                        rdotn.max(0.0).powf(shininess) * light.brightness / total_brightness
+                    }
+                })
+                .sum::<f32>();
+
+            0.1 * obj.color + diffuse_factor * obj.color + specular_factor * obj.color
         }
     }
 }
@@ -270,7 +286,7 @@ fn initialise_scene() -> Scene {
                 position: V3 {
                     x: 6.0,
                     y: -6.0,
-                    z: -1.0,
+                    z: 0.0,
                 },
                 brightness: 10.0,
             },
@@ -278,9 +294,9 @@ fn initialise_scene() -> Scene {
                 position: V3 {
                     x: -6.0,
                     y: -6.0,
-                    z: -1.0,
+                    z: 0.0,
                 },
-                brightness: 5.0,
+                brightness: 3.0,
             },
         ],
     }

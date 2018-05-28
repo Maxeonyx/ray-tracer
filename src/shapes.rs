@@ -1,7 +1,7 @@
 use cgmath::prelude::*;
 
-use solvers::*;
 use types::*;
+use util::*;
 
 #[derive(Debug, Clone)]
 pub enum Surface {
