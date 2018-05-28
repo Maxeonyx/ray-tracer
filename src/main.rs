@@ -214,7 +214,7 @@ fn initialise_scene() -> Scene {
                     z: 0.1,
                 },
                 shape: Shape::Sphere(Sphere {
-                    position: V3 {
+                    center: V3 {
                         x: 0.0,
                         y: 0.0,
                         z: -5.0,
@@ -225,12 +225,37 @@ fn initialise_scene() -> Scene {
             },
             Object2 {
                 color: V3 {
+                    x: 0.3,
+                    y: 0.3,
+                    z: 0.6,
+                },
+                shape: Shape::Triangle(Triangle {
+                    vertex_1: V3 {
+                        x: 0.0,
+                        y: -1.0,
+                        z: -6.0,
+                    },
+                    vertex_2: V3 {
+                        x: 0.0,
+                        y: -3.0,
+                        z: -6.0,
+                    },
+                    vertex_3: V3 {
+                        x: 3.0,
+                        y: -3.5,
+                        z: -12.0,
+                    },
+                }),
+                surface: Surface::Diffuse,
+            },
+            Object2 {
+                color: V3 {
                     x: 0.8,
                     y: 0.4,
                     z: 0.1,
                 },
                 shape: Shape::Sphere(Sphere {
-                    position: V3 {
+                    center: V3 {
                         x: 0.0,
                         y: 3.0,
                         z: -10.0,

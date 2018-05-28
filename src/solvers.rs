@@ -1,3 +1,5 @@
+use types::*;
+
 pub enum QuadraticRoot {
 	None,
 	One(f32),
@@ -7,10 +9,10 @@ pub enum QuadraticRoot {
 pub fn solve_quadratic(a: f32, b: f32, c: f32) -> QuadraticRoot {
 	let discriminant = b * b - 4.0 * a * c;
 
-	if discriminant <= -0.000001 {
+	if discriminant <= -EPSILON {
 		// no real roots
 		QuadraticRoot::None
-	} else if discriminant.abs() < 0.000001 {
+	} else if discriminant.abs() < EPSILON {
 		// only 1 root
 		QuadraticRoot::One((-b + discriminant.sqrt()) / 2.0 * a)
 	} else {
