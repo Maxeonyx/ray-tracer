@@ -1,13 +1,18 @@
 extern crate cgmath;
-extern crate piston_window;
+#[macro_use]
+extern crate glium;
+//extern crate piston_window;
 extern crate rayon;
 use cgmath::prelude::*;
-use piston_window::*;
+// use piston_window::*;
 use std::cmp::Ordering;
 use std::iter::Iterator;
 use std::sync::{Arc, Mutex};
 use std::vec::Vec;
 
+use glium::index::PrimitiveType;
+use glium::uniforms::{UniformValue, Uniforms};
+use glium::{glutin, Surface};
 mod shapes;
 mod types;
 mod util;
@@ -27,7 +32,7 @@ const BACKGROUND_COLOR: Color = Color {
     z: 0.1,
 };
 
-const ANTIALIASING_DIV: u32 = 4;
+const ANTIALIASING_DIV: u32 = 40;
 
 const MAX_TRACE_DEPTH: u32 = 12;
 
@@ -36,7 +41,7 @@ fn make_cells() -> Cells {
     for _ in 0..(CELLS_HIGH * CELLS_WIDE) {
         v.push(Mutex::new(DEFAULT_COLOR));
     }
-    Arc::new(v)
+    Cells { data: Arc::new(v) }
 }
 
 fn closest_intersect<'a>(ray: &Ray, scene: &'a Scene) -> Option<(f32, &'a Object2)> {
@@ -135,7 +140,7 @@ fn get_index(x: usize, y: usize) -> usize {
 fn trace_rays(cells: Cells, scene: Scene) {
     use rayon::prelude::*;
 
-    cells.par_iter().enumerate().for_each(|(index, cell)| {
+    cells.data.par_iter().enumerate().for_each(|(index, cell)| {
         //std::thread::sleep(std::time::Duration::new(0, 500_000_000));
 
         let (camera_sensor_width, camera_sensor_height, camera_sensor_dist) = (1.0, 1.0, 0.5);
@@ -185,36 +190,6 @@ fn trace_rays(cells: Cells, scene: Scene) {
     });
 }
 
-fn render_screen<G>(cells: Cells, screen_size: Size, transform: [[f64; 3]; 2], g: &mut G)
-where
-    G: Graphics,
-{
-    for x in 0..CELLS_WIDE {
-        for y in 0..CELLS_HIGH {
-            let Size { width, height } = screen_size;
-            let cell_width = width as f64 / CELLS_WIDE as f64;
-            let cell_height = height as f64 / CELLS_HIGH as f64;
-
-            match cells[get_index(x, y)].lock() {
-                Ok(cell) => {
-                    rectangle(
-                        [cell.x, cell.y, cell.z, 1.0],
-                        [
-                            x as f64 * cell_width,
-                            y as f64 * cell_height,
-                            cell_width,
-                            cell_height,
-                        ],
-                        transform,
-                        g,
-                    );
-                }
-                _ => println!("Couldn't read to render screen: hit lock"),
-            }
-        }
-    }
-}
-
 pub struct Scene {
     objects: Vec<Object2>,
     lights: Vec<Light>,
@@ -237,7 +212,7 @@ fn initialise_scene() -> Scene {
                     },
                     radius: 1.0,
                 }),
-                surface: Surface::Diffuse,
+                surface: shapes::Surface::Diffuse,
             },
             Object2 {
                 color: V3 {
@@ -262,7 +237,7 @@ fn initialise_scene() -> Scene {
                         z: -12.0,
                     },
                 }),
-                surface: Surface::Diffuse,
+                surface: shapes::Surface::Diffuse,
             },
             Object2 {
                 color: V3 {
@@ -278,7 +253,7 @@ fn initialise_scene() -> Scene {
                     },
                     radius: 10.0,
                 }),
-                surface: Surface::Diffuse,
+                surface: shapes::Surface::Diffuse,
             },
         ],
         lights: vec![
@@ -302,16 +277,28 @@ fn initialise_scene() -> Scene {
     }
 }
 
+impl Uniforms for Cells {
+    fn visit_values<'a, F: FnMut(&str, UniformValue<'a>)>(&'a self, mut f: F) {
+        for (index, cell) in self.data.iter().enumerate() {
+            let val = *cell.lock().unwrap();
+            f(
+                &format!("cells[{}]", index)[..],
+                UniformValue::Vec3([val.x, val.y, val.z]),
+            );
+        }
+        f(
+            "divisions",
+            UniformValue::Vec2([CELLS_WIDE as f32, CELLS_HIGH as f32]),
+        );
+    }
+}
+
 fn main() {
-    let mut window: PistonWindow = WindowSettings::new(
-        "Hello Piston!",
-        Size {
-            width: 400,
-            height: 600,
-        },
-    ).exit_on_esc(true)
-        .build()
-        .unwrap_or_else(|e| panic!("Failed to build PistonWindow: {}", e));
+    // building the display, ie. the main object
+    let mut events_loop = glutin::EventsLoop::new();
+    let window = glutin::WindowBuilder::new();
+    let context = glutin::ContextBuilder::new().with_vsync(true);
+    let display = glium::Display::new(window, context, &events_loop).unwrap();
 
     let cells = make_cells();
 
@@ -322,13 +309,97 @@ fn main() {
         trace_rays(thread2_cells, scene);
     });
 
-    while let Some(e) = window.next() {
-        let size = window.size();
-        let closure_cells = cells.clone();
-        window.draw_2d(&e, |c, g| {
-            clear([0.5, 1.0, 0.5, 1.0], g);
+    // building the vertex buffer, which contains all the vertices that we will draw
+    let vertex_buffer = {
+        #[derive(Copy, Clone)]
+        struct Vertex {
+            position: [f32; 2],
+        }
 
-            render_screen(closure_cells, size, c.transform, g);
+        implement_vertex!(Vertex, position);
+
+        glium::VertexBuffer::new(
+            &display,
+            &[
+                Vertex {
+                    position: [-1.0, -1.0],
+                },
+                Vertex {
+                    position: [-1.0, 1.0],
+                },
+                Vertex {
+                    position: [1.0, 1.0],
+                },
+                Vertex {
+                    position: [1.0, -1.0],
+                },
+            ],
+        ).unwrap()
+    };
+
+    // building the index buffer
+    let index_buffer =
+        glium::IndexBuffer::new(&display, PrimitiveType::TriangleStrip, &[1 as u16, 2, 0, 3])
+            .unwrap();
+
+    // compiling shaders and linking them together
+    let program = program!(&display,
+        140 => {
+            vertex: "
+                #version 140
+                in vec2 position;
+                out vec2 asdf_position;
+                void main() {
+                    gl_Position = vec4(position, 0.0, 1.0);
+                    asdf_position = position / 2 + vec2(0.5, 0.5);
+                }
+            ",
+
+            fragment: "
+                #version 140
+                out vec4 f_color;
+                in vec2 asdf_position;
+                layout(std140) uniform;
+                uniform vec2 divisions;
+
+                uniform vec3[50*50] cells;
+
+                void main() {
+                    uint divx = uint(asdf_position.x * divisions.x);
+                    uint divy = uint(asdf_position.y * divisions.y);
+
+                    uint index = divx * uint(divisions.x) + divy;
+
+                    f_color = vec4(cells[index].x, cells[index].y, cells[index].z, 1.0);
+                }
+            "
+        },
+    ).unwrap();
+
+    // the main loop
+    let mut closed = false;
+    while !closed {
+        // drawing a frame
+        let mut target = display.draw();
+        target.clear_color(0.0, 1.0, 0.0, 0.0);
+        target
+            .draw(
+                &vertex_buffer,
+                &index_buffer,
+                &program,
+                &cells,
+                &Default::default(),
+            )
+            .unwrap();
+        target.finish().unwrap();
+
+        // polling and handling the events received by the window
+        events_loop.poll_events(|event| match event {
+            glutin::Event::WindowEvent { event, .. } => match event {
+                glutin::WindowEvent::Closed => closed = true,
+                _ => (),
+            },
+            _ => (),
         });
     }
 }
