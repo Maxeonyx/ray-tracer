@@ -22,9 +22,9 @@ use types::*;
 use util::V3Extensions;
 
 const DEFAULT_COLOR: Color = V3 {
-    x: 0.4,
-    y: 0.1,
-    z: 0.4,
+    x: 0.0,
+    y: 0.0,
+    z: 0.01,
 };
 const BACKGROUND_COLOR: Color = Color {
     x: 0.1,
