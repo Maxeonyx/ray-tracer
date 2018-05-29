@@ -10,31 +10,35 @@ pub const ANTIALIASING_DIV: u32 = 4;
 
 pub type Color = V3;
 
+use std::cell;
+
 #[derive(Clone)]
 pub struct Cells {
 	pub data: Arc<Vec<Cell>>,
 }
 
+#[derive(Clone)]
 pub struct Cell {
-	inner: Mutex<Color>,
+	inner: cell::Cell<Color>,
 }
 
 impl Cell {
 	pub fn new(color: Color) -> Cell {
 		Cell {
-			inner: Mutex::new(color),
+			inner: cell::Cell::new(color),
 		}
 	}
 
 	pub fn get_content(&self) -> Color {
-		*self.inner.lock().unwrap()
+		self.inner.get()
 	}
 
 	pub fn set_content(&self, color: Color) {
-		let mut guard = self.inner.lock().unwrap();
-		*guard = color;
+		self.inner.set(color)
 	}
 }
+
+unsafe impl Sync for Cell {}
 
 impl Cells {
 	pub fn to_vec(self) -> Vec<f32> {
