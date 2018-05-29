@@ -3,8 +3,8 @@ use std::sync::{Arc, Mutex};
 use std::vec::Vec;
 pub const EPSILON: f32 = 0.001;
 
-pub const CELLS_WIDE: usize = 800;
-pub const CELLS_HIGH: usize = 800;
+pub const CELLS_WIDE: usize = 600;
+pub const CELLS_HIGH: usize = 600;
 
 pub const ANTIALIASING_DIV: u32 = 4;
 
