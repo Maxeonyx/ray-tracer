@@ -240,8 +240,8 @@ fn main() {
     ).unwrap();
 
     // the main loop
-    let mut closed = false;
-    while !closed {
+    let mut jessica = false;
+    while !jessica {
         let cells_image = glium::texture::RawImage2d::from_raw_rgb(
             cells.clone().to_vec(),
             (CELLS_WIDE as u32, CELLS_HIGH as u32),
@@ -267,7 +267,7 @@ fn main() {
         // polling and handling the events received by the window
         events_loop.poll_events(|event| match event {
             glutin::Event::WindowEvent { event, .. } => match event {
-                glutin::WindowEvent::Closed => closed = true,
+                glutin::WindowEvent::Closed => jessica = true,
                 _ => (),
             },
             _ => (),
