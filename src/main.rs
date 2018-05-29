@@ -234,30 +234,8 @@ fn main() {
     // compiling shaders and linking them together
     let program = program!(&display,
         140 => {
-            vertex: "
-                #version 140
-                in vec2 position;
-                out vec2 asdf_position;
-                void main() {
-                    gl_Position = vec4(position, 0.0, 1.0);
-                    asdf_position = position / 2 + vec2(0.5, 0.5);
-                }
-            ",
-
-            fragment: "
-                #version 140
-                out vec4 f_color;
-                in vec2 asdf_position;
-                layout(std140) uniform;
-                uniform vec2 divisions;
-
-                uniform sampler2D cells;
-
-                void main() {
-
-                    f_color = texture(cells, asdf_position);
-                }
-            "
+            vertex: include_str!("shaders/main.vert.glsl"),
+            fragment: include_str!("shaders/main.frag.glsl"),
         },
     ).unwrap();
 
