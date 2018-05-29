@@ -32,8 +32,6 @@ const BACKGROUND_COLOR: Color = Color {
     z: 0.1,
 };
 
-const ANTIALIASING_DIV: u32 = 40;
-
 const MAX_TRACE_DEPTH: u32 = 12;
 
 fn make_cells() -> Cells {
@@ -277,22 +275,6 @@ fn initialise_scene() -> Scene {
     }
 }
 
-impl Uniforms for Cells {
-    fn visit_values<'a, F: FnMut(&str, UniformValue<'a>)>(&'a self, mut f: F) {
-        for (index, cell) in self.data.iter().enumerate() {
-            let val = *cell.lock().unwrap();
-            f(
-                &format!("cells[{}]", index)[..],
-                UniformValue::Vec3([val.x, val.y, val.z]),
-            );
-        }
-        f(
-            "divisions",
-            UniformValue::Vec2([CELLS_WIDE as f32, CELLS_HIGH as f32]),
-        );
-    }
-}
-
 fn main() {
     // building the display, ie. the main object
     let mut events_loop = glutin::EventsLoop::new();
@@ -362,15 +344,11 @@ fn main() {
                 layout(std140) uniform;
                 uniform vec2 divisions;
 
-                uniform vec3[50*50] cells;
+                uniform sampler2D cells;
 
                 void main() {
-                    uint divx = uint(asdf_position.x * divisions.x);
-                    uint divy = uint(asdf_position.y * divisions.y);
 
-                    uint index = divx * uint(divisions.x) + divy;
-
-                    f_color = vec4(cells[index].x, cells[index].y, cells[index].z, 1.0);
+                    f_color = texture(cells, asdf_position);
                 }
             "
         },
@@ -379,6 +357,11 @@ fn main() {
     // the main loop
     let mut closed = false;
     while !closed {
+        let cells_image = glium::texture::RawImage2d::from_raw_rgba(
+            cells.clone().to_vec(),
+            (CELLS_WIDE as u32, CELLS_HIGH as u32),
+        );
+        let cells_texture = glium::texture::Texture2d::new(&display, cells_image).unwrap();
         // drawing a frame
         let mut target = display.draw();
         target.clear_color(0.0, 1.0, 0.0, 0.0);
@@ -387,7 +370,10 @@ fn main() {
                 &vertex_buffer,
                 &index_buffer,
                 &program,
-                &cells,
+                &uniform! {
+                    divisions: [CELLS_WIDE as f32, CELLS_HIGH as f32],
+                    cells: &cells_texture,
+                },
                 &Default::default(),
             )
             .unwrap();
