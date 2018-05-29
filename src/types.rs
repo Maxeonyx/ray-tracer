@@ -48,7 +48,6 @@ impl Cells {
 			v.push(vector_cell.x);
 			v.push(vector_cell.y);
 			v.push(vector_cell.z);
-			v.push(1.0);
 		}
 		v
 	}

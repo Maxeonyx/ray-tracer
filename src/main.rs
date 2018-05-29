@@ -349,7 +349,7 @@ fn main() {
     // the main loop
     let mut closed = false;
     while !closed {
-        let cells_image = glium::texture::RawImage2d::from_raw_rgba(
+        let cells_image = glium::texture::RawImage2d::from_raw_rgb(
             cells.clone().to_vec(),
             (CELLS_WIDE as u32, CELLS_HIGH as u32),
         );
