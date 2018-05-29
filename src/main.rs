@@ -13,10 +13,12 @@ use std::vec::Vec;
 use glium::index::PrimitiveType;
 use glium::uniforms::{UniformValue, Uniforms};
 use glium::{glutin, Surface};
+mod scene;
 mod shapes;
 mod types;
 mod util;
 
+use scene::Scene;
 use shapes::*;
 use types::*;
 use util::V3Extensions;
@@ -44,7 +46,7 @@ fn make_cells() -> Cells {
 
 fn closest_intersect<'a>(ray: &Ray, scene: &'a Scene) -> Option<(f32, &'a Object2)> {
     scene
-        .objects
+        .objects()
         .iter()
         .filter_map(move |obj| match obj.closest_intersection(ray) {
             None => None,
@@ -88,13 +90,13 @@ fn trace(ray: &Ray, scene: &Scene, depth: u32) -> Color {
             let normal = obj.normal(intersect);
 
             let total_brightness = scene
-                .lights
+                .lights()
                 .iter()
                 .map(|light| light.brightness)
                 .sum::<f32>();
 
             let diffuse_factor: f32 = scene
-                .lights
+                .lights()
                 .iter()
                 .map(|light| -> f32 {
                     let light_vec = (light.position - intersect).normalize();
@@ -107,7 +109,7 @@ fn trace(ray: &Ray, scene: &Scene, depth: u32) -> Color {
                 .sum::<f32>();
 
             let specular_factor: f32 = scene
-                .lights
+                .lights()
                 .iter()
                 .map(|light| -> f32 {
                     let light_vec = (light.position - intersect).normalize();
@@ -180,93 +182,6 @@ fn trace_rays(cells: Cells, scene: Scene) {
     });
 }
 
-pub struct Scene {
-    objects: Vec<Object2>,
-    lights: Vec<Light>,
-}
-
-fn initialise_scene() -> Scene {
-    Scene {
-        objects: vec![
-            Object2 {
-                color: V3 {
-                    x: 0.1,
-                    y: 0.8,
-                    z: 0.1,
-                },
-                shape: Shape::Sphere(Sphere {
-                    center: V3 {
-                        x: 0.0,
-                        y: 0.0,
-                        z: -5.0,
-                    },
-                    radius: 1.0,
-                }),
-                surface: shapes::Surface::Diffuse,
-            },
-            Object2 {
-                color: V3 {
-                    x: 0.3,
-                    y: 0.3,
-                    z: 0.6,
-                },
-                shape: Shape::Triangle(Triangle {
-                    vertex_1: V3 {
-                        x: 0.0,
-                        y: -1.0,
-                        z: -6.0,
-                    },
-                    vertex_2: V3 {
-                        x: 0.0,
-                        y: -3.0,
-                        z: -6.0,
-                    },
-                    vertex_3: V3 {
-                        x: 3.0,
-                        y: -3.5,
-                        z: -12.0,
-                    },
-                }),
-                surface: shapes::Surface::Diffuse,
-            },
-            Object2 {
-                color: V3 {
-                    x: 0.8,
-                    y: 0.4,
-                    z: 0.1,
-                },
-                shape: Shape::Sphere(Sphere {
-                    center: V3 {
-                        x: 0.0,
-                        y: 3.0,
-                        z: -10.0,
-                    },
-                    radius: 10.0,
-                }),
-                surface: shapes::Surface::Diffuse,
-            },
-        ],
-        lights: vec![
-            Light {
-                position: V3 {
-                    x: 6.0,
-                    y: -6.0,
-                    z: 0.0,
-                },
-                brightness: 10.0,
-            },
-            Light {
-                position: V3 {
-                    x: -6.0,
-                    y: -6.0,
-                    z: 0.0,
-                },
-                brightness: 3.0,
-            },
-        ],
-    }
-}
-
 fn main() {
     // building the display, ie. the main object
     let mut events_loop = glutin::EventsLoop::new();
@@ -278,7 +193,7 @@ fn main() {
 
     let thread2_cells = cells.clone();
     std::thread::spawn(move || {
-        let scene: Scene = initialise_scene();
+        let scene = Scene::initialise();
 
         trace_rays(thread2_cells, scene);
     });
