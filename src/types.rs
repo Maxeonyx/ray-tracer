@@ -1,5 +1,5 @@
 use cgmath::Vector3;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::vec::Vec;
 pub const EPSILON: f32 = 0.001;
 
@@ -7,6 +7,20 @@ pub const CELLS_WIDE: usize = 600;
 pub const CELLS_HIGH: usize = 600;
 
 pub const ANTIALIASING_DIV: u32 = 4;
+
+pub const DEFAULT_COLOR: Color = V3 {
+	x: 0.0,
+	y: 0.0,
+	z: 0.01,
+};
+
+pub const BACKGROUND_COLOR: Color = Color {
+	x: 0.1,
+	y: 0.1,
+	z: 0.1,
+};
+
+pub const MAX_TRACE_DEPTH: u32 = 12;
 
 pub type Color = V3;
 

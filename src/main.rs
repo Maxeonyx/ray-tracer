@@ -1,18 +1,16 @@
 extern crate cgmath;
 #[macro_use]
 extern crate glium;
-//extern crate piston_window;
 extern crate rayon;
+
 use cgmath::prelude::*;
-// use piston_window::*;
+use glium::index::PrimitiveType;
+use glium::{glutin, Surface};
 use std::cmp::Ordering;
 use std::iter::Iterator;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 use std::vec::Vec;
 
-use glium::index::PrimitiveType;
-use glium::uniforms::{UniformValue, Uniforms};
-use glium::{glutin, Surface};
 mod scene;
 mod shapes;
 mod types;
@@ -22,19 +20,6 @@ use scene::Scene;
 use shapes::*;
 use types::*;
 use util::V3Extensions;
-
-const DEFAULT_COLOR: Color = V3 {
-    x: 0.0,
-    y: 0.0,
-    z: 0.01,
-};
-const BACKGROUND_COLOR: Color = Color {
-    x: 0.1,
-    y: 0.1,
-    z: 0.1,
-};
-
-const MAX_TRACE_DEPTH: u32 = 12;
 
 fn make_cells() -> Cells {
     let mut v = Vec::with_capacity(CELLS_HIGH * CELLS_WIDE);
@@ -211,16 +196,16 @@ fn main() {
             &display,
             &[
                 Vertex {
-                    position: [-1.0, -1.0],
-                },
-                Vertex {
-                    position: [-1.0, 1.0],
-                },
-                Vertex {
                     position: [1.0, 1.0],
                 },
                 Vertex {
                     position: [1.0, -1.0],
+                },
+                Vertex {
+                    position: [-1.0, -1.0],
+                },
+                Vertex {
+                    position: [-1.0, 1.0],
                 },
             ],
         ).unwrap()
