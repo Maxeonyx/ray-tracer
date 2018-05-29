@@ -37,7 +37,7 @@ const MAX_TRACE_DEPTH: u32 = 12;
 fn make_cells() -> Cells {
     let mut v = Vec::with_capacity(CELLS_HIGH * CELLS_WIDE);
     for _ in 0..(CELLS_HIGH * CELLS_WIDE) {
-        v.push(Mutex::new(DEFAULT_COLOR));
+        v.push(Cell::new(DEFAULT_COLOR));
     }
     Cells { data: Arc::new(v) }
 }
@@ -176,15 +176,7 @@ fn trace_rays(cells: Cells, scene: Scene) {
 
         let color = colors.iter().sum::<V3>() / colors.len() as f32;
 
-        'try_update: loop {
-            match cell.lock() {
-                Ok(mut c) => {
-                    *c = color;
-                    break 'try_update;
-                }
-                Err(_) => println!("Hit lock."),
-            }
-        }
+        cell.set_content(color)
     });
 }
 

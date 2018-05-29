@@ -12,14 +12,35 @@ pub type Color = V3;
 
 #[derive(Clone)]
 pub struct Cells {
-	pub data: Arc<Vec<Mutex<Color>>>,
+	pub data: Arc<Vec<Cell>>,
+}
+
+pub struct Cell {
+	inner: Mutex<Color>,
+}
+
+impl Cell {
+	pub fn new(color: Color) -> Cell {
+		Cell {
+			inner: Mutex::new(color),
+		}
+	}
+
+	pub fn get_content(&self) -> Color {
+		*self.inner.lock().unwrap()
+	}
+
+	pub fn set_content(&self, color: Color) {
+		let mut guard = self.inner.lock().unwrap();
+		*guard = color;
+	}
 }
 
 impl Cells {
 	pub fn to_vec(self) -> Vec<f32> {
 		let mut v = Vec::with_capacity(self.data.len());
 		for cell in self.data.iter() {
-			let vector_cell = *cell.lock().unwrap();
+			let vector_cell = cell.get_content();
 			v.push(vector_cell.x);
 			v.push(vector_cell.y);
 			v.push(vector_cell.z);
