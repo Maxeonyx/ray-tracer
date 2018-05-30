@@ -120,10 +120,6 @@ fn get_xy(index: usize) -> (usize, usize) {
     (index % CELLS_WIDE, index / CELLS_WIDE)
 }
 
-fn get_index(x: usize, y: usize) -> usize {
-    x * CELLS_WIDE + y
-}
-
 fn trace_rays(cells: Cells, scene: Scene) {
     use rayon::prelude::*;
 

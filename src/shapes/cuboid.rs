@@ -66,7 +66,7 @@ impl Cuboid {
 	}
 }
 
-pub fn normal(cuboid: &Cuboid, intersection: V3) -> V3 {
+pub fn normal(_cuboid: &Cuboid, intersection: V3) -> V3 {
 	let V3 { x, y, z } = intersection;
 	if x >= y && x >= z {
 		-V3 {
