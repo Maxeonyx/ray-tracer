@@ -16,6 +16,19 @@ impl Scene {
     }
 
     pub fn initialise() -> Scene {
+        let big_box = Shape::Cuboid(Cuboid::new(
+            V3 {
+                x: 0.0,
+                y: 0.0,
+                z: -6.0,
+            },
+            V3 {
+                x: 4.0,
+                y: 4.0,
+                z: 4.0,
+            },
+            true,
+        ));
 
         let ball = Shape::Sphere(Sphere {
             center: V3 {

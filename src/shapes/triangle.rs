@@ -3,29 +3,39 @@ use types::*;
 
 #[derive(Debug)]
 pub struct Triangle {
-	pub vertex_1: V3,
-	pub vertex_2: V3,
-	pub vertex_3: V3,
+	vertices: [V3; 3],
+}
+
+impl Triangle {
+	pub fn new(vertices: [V3; 3]) -> Triangle {
+		Triangle { vertices }
+	}
+	pub fn vertices(&self) -> &[V3; 3] {
+		&self.vertices
+	}
 }
 
 pub fn normal(triangle: &Triangle, _intersection: V3) -> V3 {
-	(triangle.vertex_1 - triangle.vertex_2)
-		.cross(triangle.vertex_1 - triangle.vertex_3)
+	let vertex = triangle.vertices();
+
+	(vertex[0] - vertex[1])
+		.cross(vertex[0] - vertex[2])
 		.normalize()
 }
 
 pub fn intersection(triangle: &Triangle, ray: &Ray) -> Option<f32> {
 	// Möller–Trumbore ray-triangle intersection algorithm
+	let vertex = triangle.vertices();
 
-	let edge_1 = triangle.vertex_2 - triangle.vertex_1;
-	let edge_2 = triangle.vertex_3 - triangle.vertex_1;
+	let edge_1 = vertex[1] - vertex[0];
+	let edge_2 = vertex[2] - vertex[0];
 	let h = ray.direction.cross(edge_2);
 	let a = edge_1.dot(h);
 	if a > -EPSILON && a < EPSILON {
 		return None;
 	}
 	let f = 1.0 / a;
-	let s = ray.origin - triangle.vertex_1;
+	let s = ray.origin - vertex[0];
 	let u = f * s.dot(h);
 	if u < 0.0 || u > 1.0 {
 		return None;

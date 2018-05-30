@@ -1,8 +1,10 @@
 use types::*;
 
+mod cuboid;
 mod sphere;
 mod triangle;
 
+pub use self::cuboid::Cuboid;
 pub use self::sphere::Sphere;
 pub use self::triangle::Triangle;
 
@@ -35,12 +37,8 @@ pub struct Object2 {
 #[derive(Debug)]
 pub enum Shape {
 	Triangle(Triangle),
-	// Sphere has radius
 	Sphere(Sphere),
-	// Cylinder has height and radius
-	//Cylinder(f32, f32),
-	// Cone has height and radius
-	//Cone(f32, f32),
+	Cuboid(Cuboid),
 }
 
 impl Object2 {
@@ -48,12 +46,14 @@ impl Object2 {
 		match self.shape {
 			Shape::Sphere(ref sphere) => sphere::intersection(&sphere, ray),
 			Shape::Triangle(ref triangle) => triangle::intersection(&triangle, ray),
+			Shape::Cuboid(ref cuboid) => cuboid::intersection(&cuboid, ray),
 		}
 	}
 	pub fn normal(&self, intersection: V3) -> V3 {
 		match self.shape {
 			Shape::Sphere(ref sphere) => sphere::normal(&sphere, intersection),
 			Shape::Triangle(ref triangle) => triangle::normal(&triangle, intersection),
+			Shape::Cuboid(ref cuboid) => cuboid::normal(&cuboid, intersection),
 		}
 	}
 }
