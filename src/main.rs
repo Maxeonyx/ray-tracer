@@ -117,7 +117,7 @@ fn trace(ray: &Ray, scene: &Scene, depth: u32) -> Color {
 }
 
 fn get_xy(index: usize) -> (usize, usize) {
-    (index / CELLS_WIDE, index % CELLS_WIDE)
+    (index % CELLS_WIDE, index / CELLS_WIDE)
 }
 
 fn get_index(x: usize, y: usize) -> usize {
