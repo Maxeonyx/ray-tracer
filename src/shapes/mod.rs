@@ -1,14 +1,12 @@
 use types::*;
 
-mod cuboid;
 mod sphere;
 mod triangle;
 
-pub use self::cuboid::Cuboid;
 pub use self::sphere::Sphere;
 pub use self::triangle::Triangle;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub enum Surface {
 	Diffuse,
 	// Portion of light diffuse vs. reflected
@@ -38,7 +36,6 @@ pub struct Object2 {
 pub enum Shape {
 	Triangle(Triangle),
 	Sphere(Sphere),
-	Cuboid(Cuboid),
 }
 
 impl Object2 {
@@ -46,14 +43,12 @@ impl Object2 {
 		match self.shape {
 			Shape::Sphere(ref sphere) => sphere::intersection(&sphere, ray),
 			Shape::Triangle(ref triangle) => triangle::intersection(&triangle, ray),
-			Shape::Cuboid(ref cuboid) => cuboid::intersection(&cuboid, ray),
 		}
 	}
 	pub fn normal(&self, intersection: V3) -> V3 {
 		match self.shape {
 			Shape::Sphere(ref sphere) => sphere::normal(&sphere, intersection),
-			Shape::Triangle(ref triangle) => triangle::normal(&triangle, intersection),
-			Shape::Cuboid(ref cuboid) => cuboid::normal(&cuboid, intersection),
+			Shape::Triangle(ref triangle) => triangle::normal(&triangle),
 		}
 	}
 }

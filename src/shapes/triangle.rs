@@ -15,12 +15,14 @@ impl Triangle {
 	}
 }
 
-pub fn normal(triangle: &Triangle, _intersection: V3) -> V3 {
+pub fn normal(triangle: &Triangle) -> V3 {
 	let vertex = triangle.vertices();
 
-	(vertex[0] - vertex[1])
+	let normal = (vertex[0] - vertex[1])
 		.cross(vertex[0] - vertex[2])
-		.normalize()
+		.normalize();
+
+	normal
 }
 
 pub fn intersection(triangle: &Triangle, ray: &Ray) -> Option<f32> {

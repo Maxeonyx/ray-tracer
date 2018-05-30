@@ -127,13 +127,27 @@ fn trace_rays(cells: Cells, scene: Scene) {
     let range = range.as_mut_slice();
     thread_rng().shuffle(range);
 
+    let y_rotation = cgmath::Quaternion::from_arc(
+        V3 {
+            x: 0.0,
+            y: 0.0,
+            z: -1.0,
+        },
+        V3 {
+            x: 0.0,
+            y: 1.0,
+            z: -1.0,
+        },
+        None,
+    );
+
     range.into_par_iter().for_each(|index| {
         let (camera_sensor_width, camera_sensor_height, camera_sensor_dist) = (1.0, 1.0, 0.5);
 
         let (cell_x, cell_y) = get_xy(*index);
         let (cell_x, cell_y) = (cell_x as f32, cell_y as f32);
 
-        let mut colors = Vec::new();
+        let mut colors = [V3::zero(); ANTIALIASING_DIV * ANTIALIASING_DIV];
 
         let antialiasing_div_size = 1.0 / (ANTIALIASING_DIV as f32);
 
@@ -142,22 +156,26 @@ fn trace_rays(cells: Cells, scene: Scene) {
                 let x_offset = x as f32 * antialiasing_div_size + antialiasing_div_size / 2.0;
                 let y_offset = y as f32 * antialiasing_div_size + antialiasing_div_size / 2.0;
 
+                let ray_direction = V3 {
+                    x: -camera_sensor_width / 2.0
+                        + (cell_x + x_offset) * (camera_sensor_width / CELLS_WIDE as f32),
+                    y: -camera_sensor_height / 2.0
+                        + (cell_y + y_offset) * (camera_sensor_height / CELLS_HIGH as f32),
+                    z: -camera_sensor_dist,
+                };
+
+                //let ray_direction = y_rotation.rotate_vector(ray_direction);
+
                 let mut ray = Ray {
                     origin: V3 {
                         x: 0.0,
                         y: 0.0,
                         z: 0.0,
                     },
-                    direction: V3 {
-                        x: -camera_sensor_width / 2.0
-                            + (cell_x + x_offset) * (camera_sensor_width / CELLS_WIDE as f32),
-                        y: -camera_sensor_height / 2.0
-                            + (cell_y + y_offset) * (camera_sensor_height / CELLS_HIGH as f32),
-                        z: -camera_sensor_dist,
-                    },
+                    direction: ray_direction,
                 };
                 ray.direction = ray.direction.normalize();
-                colors.push(trace(&ray, &scene, 0));
+                colors[x * ANTIALIASING_DIV + y] = trace(&ray, &scene, 0);
             }
         }
 
@@ -229,6 +247,9 @@ fn main() {
     // the main loop
     let mut jessica = false;
     while !jessica {
+        let frame_deadline =
+            std::time::Instant::now() + std::time::Duration::from_millis(1_000 / 60);
+
         let cells_image = glium::texture::RawImage2d::from_raw_rgb(
             cells.clone().to_vec(),
             (CELLS_WIDE as u32, CELLS_HIGH as u32),
@@ -259,5 +280,9 @@ fn main() {
             },
             _ => (),
         });
+
+        if std::time::Instant::now() < frame_deadline {
+            std::thread::sleep(frame_deadline - std::time::Instant::now());
+        }
     }
 }

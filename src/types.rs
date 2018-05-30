@@ -6,7 +6,7 @@ pub const EPSILON: f32 = 0.001;
 pub const CELLS_WIDE: usize = 800;
 pub const CELLS_HIGH: usize = 800;
 
-pub const ANTIALIASING_DIV: u32 = 4;
+pub const ANTIALIASING_DIV: usize = 4;
 
 pub const DEFAULT_COLOR: Color = V3 {
 	x: 0.0,
