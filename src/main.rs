@@ -1,11 +1,13 @@
 extern crate cgmath;
 #[macro_use]
 extern crate glium;
+extern crate rand;
 extern crate rayon;
 
 use cgmath::prelude::*;
 use glium::index::PrimitiveType;
 use glium::{glutin, Surface};
+use rand::*;
 use std::cmp::Ordering;
 use std::iter::Iterator;
 use std::sync::Arc;
@@ -125,12 +127,14 @@ fn get_index(x: usize, y: usize) -> usize {
 fn trace_rays(cells: Cells, scene: Scene) {
     use rayon::prelude::*;
 
-    cells.data.par_iter().enumerate().for_each(|(index, cell)| {
-        //std::thread::sleep(std::time::Duration::new(0, 500_000_000));
+    let mut range: Vec<usize> = (0..(CELLS_HIGH * CELLS_WIDE)).collect();
+    let range = range.as_mut_slice();
+    thread_rng().shuffle(range);
 
+    range.into_par_iter().for_each(|index| {
         let (camera_sensor_width, camera_sensor_height, camera_sensor_dist) = (1.0, 1.0, 0.5);
 
-        let (cell_x, cell_y) = get_xy(index);
+        let (cell_x, cell_y) = get_xy(*index);
         let (cell_x, cell_y) = (cell_x as f32, cell_y as f32);
 
         let mut colors = Vec::new();
@@ -162,6 +166,8 @@ fn trace_rays(cells: Cells, scene: Scene) {
         }
 
         let color = colors.iter().sum::<V3>() / colors.len() as f32;
+
+        let cell = &cells.data[*index];
 
         cell.set_content(color)
     });

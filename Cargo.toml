@@ -7,3 +7,4 @@ authors = ["maxeonyx <maxeonyx@gmail.com>"]
 cgmath = "*"
 rayon = "*"
 glium = "*"
+rand = "*"
