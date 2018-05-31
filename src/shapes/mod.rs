@@ -30,6 +30,7 @@ pub struct Object2 {
 	pub color: Color,
 	pub surface: Surface,
 	pub shape: Shape,
+	pub shininess: f32,
 }
 
 #[derive(Debug)]

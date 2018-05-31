@@ -84,5 +84,12 @@ pub fn get_texture_coord(triangle: &Triangle, intersection: V3) -> V2 {
 	let area_2 = f3.cross(f1).magnitude() / area; // p2's triangle area / a
 	let area_3 = f1.cross(f2).magnitude() / area; // p3's triangle area / a
 											   // find the uv corresponding to point f (uv1/uv2/uv3 are associated to p1/p2/p3):
-	uv[0] * area_1 + uv[1] * area_2 + uv[2] * area_3
+	let coord = uv[0] * area_1 + uv[1] * area_2 + uv[2] * area_3;
+
+	let coord = V2 {
+		x: coord.x % 0.999,
+		y: coord.y % 0.999,
+	};
+
+	coord
 }

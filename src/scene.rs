@@ -8,10 +8,11 @@ pub struct Scene {
 }
 
 const CAT_IMAGE_BYTES: &[u8] = include_bytes!("images/CUTE-CAT.jpg");
+const CARPET_IMAGE_BYTES: &[u8] = include_bytes!("images/seamless_carpet_texture.jpg");
 
 use cgmath::prelude::*;
+use cgmath::Deg;
 use cgmath::Quaternion;
-use cgmath::Rad;
 use cgmath::Rotation3;
 
 fn transform(input: V3) -> V3 {
@@ -71,14 +72,15 @@ impl Scene {
 
     pub fn initialise(textures: &mut Vec<DynamicImage>) -> Scene {
         textures.push(::image::load_from_memory(CAT_IMAGE_BYTES).unwrap());
+        textures.push(::image::load_from_memory(CARPET_IMAGE_BYTES).unwrap());
 
         let mut objects = vec![];
         objects.append(&mut make_cube(
             true,
             V3 {
-                x: 0.6,
-                y: 0.7,
-                z: 0.2,
+                x: 0.9,
+                y: 0.5,
+                z: 0.0,
             },
             Surface::Diffuse,
         ));
@@ -91,7 +93,7 @@ impl Scene {
                     y: -5.0,
                     z: 3.0,
                 }),
-                radius: 6.0,
+                radius: 6.5,
             }),
             surface: Surface::Diffuse,
             color: V3 {
@@ -99,6 +101,7 @@ impl Scene {
                 y: 0.1,
                 z: 0.0,
             },
+            shininess: 80.0,
         });
 
         // green sphere
@@ -117,6 +120,7 @@ impl Scene {
                 y: 1.0,
                 z: 0.3,
             },
+            shininess: 40.0,
         });
 
         // reflective blue sphere
@@ -129,33 +133,45 @@ impl Scene {
                 }),
                 radius: 15.0,
             }),
-            surface: Surface::Reflective(0.8),
+            surface: Surface::Reflective(0.95),
             color: V3 {
                 x: 0.0,
                 y: 0.0,
                 z: 1.0,
             },
+            shininess: 40.0,
         });
+
+        let cat_triangle_vertices = [
+            transform(V3 {
+                x: -5.0,
+                y: 27.5,
+                z: 30.0,
+            }),
+            transform(V3 {
+                x: -5.0,
+                y: 27.5,
+                z: 0.0,
+            }),
+            transform(V3 {
+                x: 17.0,
+                y: 27.5,
+                z: 0.0,
+            }),
+            transform(V3 {
+                x: 17.0,
+                y: 27.5,
+                z: 30.0,
+            }),
+        ];
 
         // cat triangle 1
         objects.push(Object2 {
             shape: Shape::Triangle(Triangle::new_with_uv(
                 [
-                    transform(V3 {
-                        x: -1.0,
-                        y: 14.5,
-                        z: 6.0,
-                    }),
-                    transform(V3 {
-                        x: -1.0,
-                        y: 14.5,
-                        z: 0.0,
-                    }),
-                    transform(V3 {
-                        x: 5.0,
-                        y: 14.5,
-                        z: 0.0,
-                    }),
+                    cat_triangle_vertices[0],
+                    cat_triangle_vertices[1],
+                    cat_triangle_vertices[2],
                 ],
                 [
                     V2 { x: 0.0, y: 0.0 },
@@ -165,31 +181,20 @@ impl Scene {
             )),
             surface: Surface::Textured(0),
             color: V3 {
-                x: 0.0,
+                x: 1.0,
                 y: 1.0,
                 z: 1.0,
             },
+            shininess: 40.0,
         });
 
         // cat triangle 2
         objects.push(Object2 {
             shape: Shape::Triangle(Triangle::new_with_uv(
                 [
-                    transform(V3 {
-                        x: -1.0,
-                        y: 14.5,
-                        z: 6.0,
-                    }),
-                    transform(V3 {
-                        x: 5.0,
-                        y: 14.5,
-                        z: 0.0,
-                    }),
-                    transform(V3 {
-                        x: 5.0,
-                        y: 14.5,
-                        z: 6.0,
-                    }),
+                    cat_triangle_vertices[0],
+                    cat_triangle_vertices[2],
+                    cat_triangle_vertices[3],
                 ],
                 [
                     V2 { x: 0.0, y: 0.0 },
@@ -199,28 +204,233 @@ impl Scene {
             )),
             surface: Surface::Textured(0),
             color: V3 {
-                x: 0.0,
+                x: 1.0,
                 y: 1.0,
                 z: 1.0,
             },
+            shininess: 40.0,
+        });
+
+        let carpet_triangle_vertices = [
+            transform(V3 {
+                x: 0.0,
+                y: 400.0,
+                z: -0.001,
+            }),
+            transform(V3 {
+                x: 400.0,
+                y: 0.0,
+                z: -0.001,
+            }),
+            transform(V3 {
+                x: 0.0,
+                y: -400.0,
+                z: -0.001,
+            }),
+            transform(V3 {
+                x: -400.0,
+                y: 0.0,
+                z: -0.001,
+            }),
+        ];
+
+        let carpet_wrap_factor = 20.0;
+
+        // carpet triangle 1
+        objects.push(Object2 {
+            shape: Shape::Triangle(Triangle::new_with_uv(
+                [
+                    carpet_triangle_vertices[0],
+                    carpet_triangle_vertices[1],
+                    carpet_triangle_vertices[2],
+                ],
+                [
+                    V2 { x: 0.0, y: 0.0 },
+                    V2 {
+                        x: 0.0,
+                        y: carpet_wrap_factor,
+                    },
+                    V2 {
+                        x: carpet_wrap_factor,
+                        y: carpet_wrap_factor,
+                    },
+                ],
+            )),
+            surface: Surface::Textured(1),
+            color: V3 {
+                x: 0.4,
+                y: 0.1,
+                z: 0.05,
+            },
+            shininess: 0.0,
+        });
+
+        // carpet triangle 2
+        objects.push(Object2 {
+            shape: Shape::Triangle(Triangle::new_with_uv(
+                [
+                    carpet_triangle_vertices[0],
+                    carpet_triangle_vertices[2],
+                    carpet_triangle_vertices[3],
+                ],
+                [
+                    V2 { x: 0.0, y: 0.0 },
+                    V2 {
+                        x: carpet_wrap_factor,
+                        y: carpet_wrap_factor,
+                    },
+                    V2 {
+                        x: carpet_wrap_factor,
+                        y: 0.0,
+                    },
+                ],
+            )),
+            surface: Surface::Textured(1),
+            color: V3 {
+                x: 0.4,
+                y: 0.1,
+                z: 0.05,
+            },
+            shininess: 0.0,
+        });
+
+        let tetrahedron_pos = V3 {
+            x: -3.0,
+            y: 10.0,
+            z: 3.0,
+        };
+
+        let tetrahedron_rotation = Quaternion::from_axis_angle(V3::unit_z(), Deg(60.0));
+
+        let tetrahedron_size = 4.0;
+
+        let tetrahedron_vertices = [
+            transform(
+                tetrahedron_pos
+                    + tetrahedron_rotation.rotate_vector(
+                        V3 {
+                            x: 1.0,
+                            y: 0.0,
+                            z: 1.0 / 2.0_f32.sqrt(),
+                        } * tetrahedron_size,
+                    ),
+            ),
+            transform(
+                tetrahedron_pos
+                    + tetrahedron_rotation.rotate_vector(
+                        V3 {
+                            x: -1.0,
+                            y: 0.0,
+                            z: 1.0 / 2.0_f32.sqrt(),
+                        } * tetrahedron_size,
+                    ),
+            ),
+            transform(
+                tetrahedron_pos
+                    + tetrahedron_rotation.rotate_vector(
+                        V3 {
+                            x: 0.0,
+                            y: 1.0,
+                            z: -1.0 / 2.0_f32.sqrt(),
+                        } * tetrahedron_size,
+                    ),
+            ),
+            transform(
+                tetrahedron_pos
+                    + tetrahedron_rotation.rotate_vector(
+                        V3 {
+                            x: 0.0,
+                            y: -1.0,
+                            z: -1.0 / 2.0_f32.sqrt(),
+                        } * tetrahedron_size,
+                    ),
+            ),
+        ];
+
+        objects.push(Object2 {
+            shape: Shape::Triangle(Triangle::new([
+                tetrahedron_vertices[0],
+                tetrahedron_vertices[1],
+                tetrahedron_vertices[2],
+            ])),
+            surface: Surface::Diffuse,
+            color: V3 {
+                x: 0.2,
+                y: 0.7,
+                z: 0.4,
+            },
+            shininess: 10.0,
+        });
+
+        objects.push(Object2 {
+            shape: Shape::Triangle(Triangle::new([
+                tetrahedron_vertices[0],
+                tetrahedron_vertices[1],
+                tetrahedron_vertices[3],
+            ])),
+            surface: Surface::Diffuse,
+            color: V3 {
+                x: 0.2,
+                y: 0.7,
+                z: 0.4,
+            },
+            shininess: 10.0,
+        });
+
+        objects.push(Object2 {
+            shape: Shape::Triangle(Triangle::new([
+                tetrahedron_vertices[0],
+                tetrahedron_vertices[2],
+                tetrahedron_vertices[3],
+            ])),
+            surface: Surface::Diffuse,
+            color: V3 {
+                x: 0.2,
+                y: 0.7,
+                z: 0.4,
+            },
+            shininess: 10.0,
+        });
+
+        objects.push(Object2 {
+            shape: Shape::Triangle(Triangle::new([
+                tetrahedron_vertices[1],
+                tetrahedron_vertices[2],
+                tetrahedron_vertices[3],
+            ])),
+            surface: Surface::Diffuse,
+            color: V3 {
+                x: 0.2,
+                y: 0.7,
+                z: 0.4,
+            },
+            shininess: 10.0,
         });
 
         let mut lights = vec![
             Light {
                 position: transform(V3 {
-                    x: -100.0,
-                    y: 0.0,
-                    z: 100.0,
+                    x: -29.0,
+                    y: -10.0,
+                    z: 13.0,
                 }),
-                brightness: 100.0,
+                brightness: 40.0,
+            },
+            Light {
+                position: transform(V3 {
+                    x: 25.0,
+                    y: 19.0,
+                    z: 19.0,
+                }),
+                brightness: 50.0,
             },
             Light {
                 position: transform(V3 {
                     x: 0.0,
-                    y: -80.0,
-                    z: 100.0,
+                    y: -29.0,
+                    z: 19.0,
                 }),
-                brightness: 30.0,
+                brightness: 60.0,
             },
         ];
 
@@ -298,11 +508,7 @@ fn make_cube(open_top: bool, color: Color, surface: Surface) -> Vec<Object2> {
             continue;
         }
 
-        let flip_normal = if (i == 0 || i == 1 || i == 2 || i == 9) {
-            true
-        } else {
-            false
-        };
+        let flip_normal = if (i == 2 || i == 9) { true } else { false };
 
         let indices = &VERTEX_ORDER[i..i + 3];
 
@@ -332,6 +538,7 @@ fn make_cube(open_top: bool, color: Color, surface: Surface) -> Vec<Object2> {
             // },
             color,
             surface,
+            shininess: 20.0,
         });
     }
     triangles

@@ -93,7 +93,8 @@ fn trace(ray: &Ray, scene: &Scene, textures: &Vec<DynamicImage>, depth: u32) -> 
                     if trace_shadow(intersect, light, scene) {
                         0.0
                     } else {
-                        light_vec.dot(normal).max(0.0) * light.brightness / total_brightness
+                        light_vec.dot(normal).max(0.0) * (light.brightness / total_brightness)
+                        //* 2.73_f32.powf(0.00001 * (light.position - intersect).magnitude())
                     }
                 })
                 .sum::<f32>();
@@ -105,11 +106,11 @@ fn trace(ray: &Ray, scene: &Scene, textures: &Vec<DynamicImage>, depth: u32) -> 
                     let light_vec = (light.position - intersect).normalize();
                     let reflected = (-light_vec).reflect(normal);
                     let rdotn = reflected.dot(normal);
-                    let shininess = 50.0;
+                    let shininess = obj.shininess;
                     if trace_shadow(intersect, light, scene) {
                         0.0
                     } else {
-                        rdotn.max(0.0).powf(shininess) * light.brightness / total_brightness
+                        rdotn.max(0.0).powf(shininess)
                     }
                 })
                 .sum::<f32>();
@@ -133,21 +134,31 @@ fn trace(ray: &Ray, scene: &Scene, textures: &Vec<DynamicImage>, depth: u32) -> 
 
                     let texture = &textures[texture];
                     let (width, height) = texture.dimensions();
+                    //println!("width: {} height: {}", width, height);
 
-                    let pixel_x = width * (texture_coord.x % 1.0) as u32;
-                    let pixel_y = height * (texture_coord.y % 1.0) as u32;
+                    let pixel_x = (width as f32 * texture_coord.x).floor() as u32;
+                    let pixel_y = (height as f32 * texture_coord.y).floor() as u32;
 
+                    //println!("x: {} y: {}", pixel_x, pixel_y);
                     let pixel = texture.get_pixel(pixel_x, pixel_y);
 
+                    //println!("{:?}", pixel);
+
+                    let color = V3 {
+                        x: pixel.data[0] as f32 / 256.0,
+                        y: pixel.data[1] as f32 / 256.0,
+                        z: pixel.data[2] as f32 / 256.0,
+                    };
+
                     V3 {
-                        x: pixel.data[0] as f32 / 255.0,
-                        y: pixel.data[1] as f32 / 255.0,
-                        z: pixel.data[2] as f32 / 255.0,
+                        x: color.x.powf(2.0) * surface_color.x,
+                        y: color.y.powf(2.0) * surface_color.y,
+                        z: color.z.powf(2.0) * surface_color.z,
                     }
                 }
             };
 
-            0.1 * obj.color + surface_color
+            0.05 * obj.color + surface_color
         }
     }
 }
