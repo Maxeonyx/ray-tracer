@@ -9,6 +9,7 @@ use cgmath::prelude::*;
 use glium::index::PrimitiveType;
 use glium::{glutin, Surface};
 use image::GenericImage;
+use image::{load_from_memory, DynamicImage};
 use rand::*;
 use std::cmp::Ordering;
 use std::iter::Iterator;
@@ -64,7 +65,7 @@ fn trace_shadow(point: V3, light: &Light, scene: &Scene) -> bool {
     }
 }
 
-fn trace(ray: &Ray, scene: &Scene, depth: u32) -> Color {
+fn trace(ray: &Ray, scene: &Scene, textures: &Vec<DynamicImage>, depth: u32) -> Color {
     if depth > MAX_TRACE_DEPTH {
         return BACKGROUND_COLOR;
     }
@@ -123,29 +124,25 @@ fn trace(ray: &Ray, scene: &Scene, depth: u32) -> Color {
                         origin: intersect,
                     };
 
-                    let reflected_color = trace(&reflected_ray, scene, depth + 1);
+                    let reflected_color = trace(&reflected_ray, scene, textures, depth + 1);
 
                     reflected_color * portion + surface_color * (1.0 - portion)
                 }
                 shapes::Surface::Textured(texture) => {
                     let texture_coord = obj.get_texture_coord(intersect);
 
-                    match image::load_from_memory(texture) {
-                        Err(_) => V3::zero(),
-                        Ok(texture) => {
-                            let (width, height) = texture.dimensions();
+                    let texture = &textures[texture];
+                    let (width, height) = texture.dimensions();
 
-                            let pixel_x = width * (texture_coord.x % 1.0) as u32;
-                            let pixel_y = height * (texture_coord.y % 1.0) as u32;
+                    let pixel_x = width * (texture_coord.x % 1.0) as u32;
+                    let pixel_y = height * (texture_coord.y % 1.0) as u32;
 
-                            let pixel = texture.get_pixel(pixel_x, pixel_y);
+                    let pixel = texture.get_pixel(pixel_x, pixel_y);
 
-                            V3 {
-                                x: pixel.data[0] as f32 / 255.0,
-                                y: pixel.data[1] as f32 / 255.0,
-                                z: pixel.data[2] as f32 / 255.0,
-                            }
-                        }
+                    V3 {
+                        x: pixel.data[0] as f32 / 255.0,
+                        y: pixel.data[1] as f32 / 255.0,
+                        z: pixel.data[2] as f32 / 255.0,
                     }
                 }
             };
@@ -159,7 +156,7 @@ fn get_xy(index: usize) -> (usize, usize) {
     (index % CELLS_WIDE, index / CELLS_WIDE)
 }
 
-fn trace_rays(cells: Cells, scene: Scene) {
+fn trace_rays(cells: Cells, textures: &Vec<DynamicImage>, scene: Scene) {
     use rayon::prelude::*;
 
     let mut range: Vec<usize> = (0..(CELLS_HIGH * CELLS_WIDE)).collect();
@@ -214,7 +211,7 @@ fn trace_rays(cells: Cells, scene: Scene) {
                     direction: ray_direction,
                 };
                 ray.direction = ray.direction.normalize();
-                colors[x * ANTIALIASING_DIV + y] = trace(&ray, &scene, 0);
+                colors[x * ANTIALIASING_DIV + y] = trace(&ray, &scene, textures, 0);
             }
         }
 
@@ -237,9 +234,10 @@ fn main() {
 
     let thread2_cells = cells.clone();
     std::thread::spawn(move || {
-        let scene = Scene::initialise();
+        let mut textures = vec![];
+        let scene = Scene::initialise(&mut textures);
 
-        trace_rays(thread2_cells, scene);
+        trace_rays(thread2_cells, &textures, scene);
     });
 
     // building the vertex buffer, which contains all the vertices that we will draw

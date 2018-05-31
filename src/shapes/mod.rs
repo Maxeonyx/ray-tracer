@@ -16,7 +16,7 @@ pub enum Surface {
 	// Portion of light diffuse vs. (reflected/refracted), portion of light reflected vs. refracted, refractive index
 	//ReflectiveAndRefractive(f32, f32, f32),
 	// Texture ID
-	Textured(&'static [u8]),
+	Textured(usize),
 }
 
 #[derive(Debug)]

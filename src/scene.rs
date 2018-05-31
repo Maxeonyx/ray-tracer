@@ -1,3 +1,4 @@
+use image::{load_from_memory, DynamicImage};
 use shapes::*;
 use types::*;
 
@@ -68,7 +69,9 @@ impl Scene {
         &self.lights
     }
 
-    pub fn initialise() -> Scene {
+    pub fn initialise(textures: &mut Vec<DynamicImage>) -> Scene {
+        textures.push(::image::load_from_memory(CAT_IMAGE_BYTES).unwrap());
+
         let mut objects = vec![];
         objects.append(&mut make_cube(
             true,
@@ -160,7 +163,7 @@ impl Scene {
                     V2 { x: 1.0, y: 1.0 },
                 ],
             )),
-            surface: Surface::Textured(CAT_IMAGE_BYTES),
+            surface: Surface::Textured(0),
             color: V3 {
                 x: 0.0,
                 y: 1.0,
@@ -194,7 +197,7 @@ impl Scene {
                     V2 { x: 1.0, y: 0.0 },
                 ],
             )),
-            surface: Surface::Textured(CAT_IMAGE_BYTES),
+            surface: Surface::Textured(0),
             color: V3 {
                 x: 0.0,
                 y: 1.0,
