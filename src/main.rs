@@ -1,12 +1,14 @@
 extern crate cgmath;
 #[macro_use]
 extern crate glium;
+extern crate image;
 extern crate rand;
 extern crate rayon;
 
 use cgmath::prelude::*;
 use glium::index::PrimitiveType;
 use glium::{glutin, Surface};
+use image::GenericImage;
 use rand::*;
 use std::cmp::Ordering;
 use std::iter::Iterator;
@@ -102,7 +104,7 @@ fn trace(ray: &Ray, scene: &Scene, depth: u32) -> Color {
                     let light_vec = (light.position - intersect).normalize();
                     let reflected = (-light_vec).reflect(normal);
                     let rdotn = reflected.dot(normal);
-                    let shininess = 20.0;
+                    let shininess = 50.0;
                     if trace_shadow(intersect, light, scene) {
                         0.0
                     } else {
@@ -111,7 +113,44 @@ fn trace(ray: &Ray, scene: &Scene, depth: u32) -> Color {
                 })
                 .sum::<f32>();
 
-            0.1 * obj.color + diffuse_factor * obj.color + specular_factor * obj.color
+            let surface_color = diffuse_factor * obj.color + specular_factor * obj.color;
+
+            let surface_color = match obj.surface {
+                shapes::Surface::Diffuse => surface_color,
+                shapes::Surface::Reflective(portion) => {
+                    let reflected_ray = Ray {
+                        direction: ray.direction.reflect(normal),
+                        origin: intersect,
+                    };
+
+                    let reflected_color = trace(&reflected_ray, scene, depth + 1);
+
+                    reflected_color * portion + surface_color * (1.0 - portion)
+                }
+                shapes::Surface::Textured(texture) => {
+                    let texture_coord = obj.get_texture_coord(intersect);
+
+                    match image::load_from_memory(texture) {
+                        Err(_) => V3::zero(),
+                        Ok(texture) => {
+                            let (width, height) = texture.dimensions();
+
+                            let pixel_x = width * (texture_coord.x % 1.0) as u32;
+                            let pixel_y = height * (texture_coord.y % 1.0) as u32;
+
+                            let pixel = texture.get_pixel(pixel_x, pixel_y);
+
+                            V3 {
+                                x: pixel.data[0] as f32 / 255.0,
+                                y: pixel.data[1] as f32 / 255.0,
+                                z: pixel.data[2] as f32 / 255.0,
+                            }
+                        }
+                    }
+                }
+            };
+
+            0.1 * obj.color + surface_color
         }
     }
 }
@@ -125,7 +164,7 @@ fn trace_rays(cells: Cells, scene: Scene) {
 
     let mut range: Vec<usize> = (0..(CELLS_HIGH * CELLS_WIDE)).collect();
     let range = range.as_mut_slice();
-    thread_rng().shuffle(range);
+    //thread_rng().shuffle(range);
 
     let y_rotation = cgmath::Quaternion::from_arc(
         V3 {
@@ -135,7 +174,7 @@ fn trace_rays(cells: Cells, scene: Scene) {
         },
         V3 {
             x: 0.0,
-            y: 1.0,
+            y: 2.0,
             z: -1.0,
         },
         None,
@@ -280,9 +319,9 @@ fn main() {
             },
             _ => (),
         });
-
-        if std::time::Instant::now() < frame_deadline {
-            std::thread::sleep(frame_deadline - std::time::Instant::now());
+        let time = std::time::Instant::now();
+        if time < frame_deadline {
+            std::thread::sleep(frame_deadline - time);
         }
     }
 }

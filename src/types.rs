@@ -1,4 +1,4 @@
-use cgmath::Vector3;
+use cgmath::{Vector2, Vector3};
 use std::sync::Arc;
 use std::vec::Vec;
 pub const EPSILON: f32 = 0.001;
@@ -68,6 +68,7 @@ impl Cells {
 }
 
 pub type V3 = Vector3<f32>;
+pub type V2 = Vector2<f32>;
 
 #[derive(Debug)]
 pub struct Ray {
